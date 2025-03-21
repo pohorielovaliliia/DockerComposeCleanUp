@@ -1,0 +1,45 @@
+﻿services:
+  # ASP.NET Framework Application (Example)
+  web-app:
+    image: docker-web-app
+    container_name: web-app
+    ports:
+      - "8080:80"
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 40s
+    restart: always
+    networks:
+      - test-app-network
+
+  # SQL Server container (Custom Docker Image)
+  sqlserver:
+    image: sql-server-backup
+    container_name: sqlserver
+    ports:
+     - "1433:1433"
+    volumes:
+      - ./database/:C:/temp/
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=PaSSw0rd
+      - ATTACH_DBS=[{'dbName':'TestDB','dbFiles':['C:\\temp\\TestDB.mdf','C:\\temp\\TestDB_log.ldf']}]
+    healthcheck:
+      test: ["CMD", "sqlcmd", "-S", "localhost", "-U", "sa", "-P", "PaSSw0rd", "-Q", "SELECT 1"]
+      interval: 10s
+      retries: 5
+      start_period: 10s
+      timeout: 3s
+    restart: always
+    networks:
+      - test-app-network
+
+networks:
+  test-app-network:
+    driver: nat
