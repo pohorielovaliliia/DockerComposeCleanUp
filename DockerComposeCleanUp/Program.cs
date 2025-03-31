@@ -67,7 +67,7 @@ namespace DockerComposeCleanUp
                 process.StartInfo = processStartInfo;
 
                 process.OutputDataReceived += (sender, e) => { if (e.Data != null) Console.WriteLine(e.Data); };
-                process.ErrorDataReceived += (sender, e) => { if (e.Data != null) Console.Error.WriteLine(e.Data); };
+                process.ErrorDataReceived += (sender, e) => { if (e.Data != null) Console.WriteLine(e.Data); };
 
                 process.Start();
 
