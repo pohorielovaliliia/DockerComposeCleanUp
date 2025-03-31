@@ -11,8 +11,16 @@ namespace DockerComposeCleanUp
     {
         static async Task Main(string[] args)
         {
+            string filePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "clean-up-result.txt");
+            TextWriter consoleWriter = Console.Out;
+            StreamWriter? writer = null;
+
             try
             {
+                writer = new StreamWriter(filePath, true);
+                writer.AutoFlush = true;
+                Console.SetOut(new MultiTextWriter(consoleWriter, writer));
+
                 DockerComposeDown();
                 await RemoveDockerImagesAsync(new List<string> { "docker-web-app", "sql-server-backup" }, true);
             }
@@ -23,7 +31,16 @@ namespace DockerComposeCleanUp
             }
             finally
             {
+                Console.SetOut(consoleWriter);
+
                 WaitForExit();
+
+                if (writer != null)
+                {
+                    writer.Flush();
+                    writer.Close();
+                    writer.Dispose();
+                }
             }
         }
 
@@ -135,5 +152,31 @@ namespace DockerComposeCleanUp
             Console.ReadKey();
             Environment.Exit(0);
         }
+    }
+}
+
+class MultiTextWriter : TextWriter
+{
+    private readonly TextWriter _consoleWriter, _fileWriter;
+
+    public MultiTextWriter(TextWriter consoleWriter, TextWriter fileWriter)
+    {
+        _consoleWriter = consoleWriter;
+        _fileWriter = fileWriter;
+    }
+
+    public override Encoding Encoding => _consoleWriter.Encoding;
+
+    public override void WriteLine(string value)
+    {
+        string timestampedValue = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] {value}";
+        _consoleWriter.WriteLine(value);
+        _fileWriter.WriteLine(timestampedValue);
+    }
+
+    public override void Write(char value)
+    {
+        _consoleWriter.Write(value);
+        _fileWriter.Write(value);
     }
 }
